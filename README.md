@@ -8,6 +8,10 @@ A simple bash script to hide or show XQuartz from the macOS dock.
 - Automatic backup of original settings
 - Safe restoration from backup
 
+## Download
+
+Simply download the `hide_xquartz_from_dock.command` from the [releases page](https://github.com/weijyun9008/hide_xquartz_from_dock/releases/latest).
+
 ## Usage
 
 1. Open Terminal
