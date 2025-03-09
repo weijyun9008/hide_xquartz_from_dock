@@ -122,7 +122,6 @@ chown $(whoami):admin "$PLIST_PATH"
 # Confirm changes
 if [[ $? -eq 0 ]]; then
   echo
-  echo "LSUIElement key successfully added to $PLIST_PATH."
   echo "XQuartz will no longer appear in the dock."
 else
   echo
