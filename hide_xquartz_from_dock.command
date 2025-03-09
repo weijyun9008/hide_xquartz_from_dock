@@ -7,12 +7,6 @@ if [[ ! -x "$0" ]]; then
   chmod +x "$0"
 fi
 
-# Check if XQuartz is installed
-if [ ! -d "$APP_PATH" ]; then
-  echo "Error: XQuartz is not installed"
-  exit 1
-fi
-
 # Show initial guidance
 echo "Hide XQuartz From Dock"
 echo "=============================="
@@ -47,11 +41,12 @@ restore_backup() {
   local backup_path="$1"
   echo "Restoring from backup: $backup_path"
 
-  cp "$backup_path" "$PLIST_PATH"
+  sudo cp "$backup_path" "$PLIST_PATH"
+  sudo codesign --force --sign - "$APP_PATH"
   chmod 644 "$PLIST_PATH"
   chown $(whoami):admin "$PLIST_PATH"
-  sudo codesign --force --sign - "$APP_PATH"
   
+  echo
   echo "Restore completed"
 }
 
@@ -78,23 +73,17 @@ fi
 
 # Mode: Restore
 if [ "$MODE" == "restore" ]; then
-  # Find the most recent backup
-  LATEST_BACKUP=$(ls -t "$APP_PATH/Contents/Info.plist.bak."* 2>/dev/null | head -n1)
-  if [ -z "$LATEST_BACKUP" ]; then
-    echo "No backup files found"
+  # Use the backup file
+  BACKUP_PATH="$APP_PATH/Contents/Info.plist.bak"
+  if [ ! -f "$BACKUP_PATH" ]; then
+    echo "Backup file not found"
     exit 1
   fi
-  restore_backup "$LATEST_BACKUP"
+  restore_backup "$BACKUP_PATH"
   exit 0
 fi
 
 # Mode: Patch
-# Verify we can modify the plist before proceeding
-if [ ! -w "$PLIST_PATH" ]; then
-  echo "Error: Cannot write to $PLIST_PATH"
-  exit 1
-fi
-
 # Check if LSUIElement key already exists
 if /usr/libexec/PlistBuddy -c "Print :LSUIElement" "$PLIST_PATH" &>/dev/null; then
   echo "LSUIElement key already exists in $PLIST_PATH."
@@ -102,9 +91,10 @@ if /usr/libexec/PlistBuddy -c "Print :LSUIElement" "$PLIST_PATH" &>/dev/null; th
 fi
 
 # Create backup with timestamp
-BACKUP_PATH="$APP_PATH/Contents/Info.plist.bak.$(date +%Y%m%d_%H%M%S)"
-cp "$PLIST_PATH" "$BACKUP_PATH"
-if [[ $? -eq 0 ]]; then
+BACKUP_PATH="$APP_PATH/Contents/Info.plist.bak"
+if sudo cp "$PLIST_PATH" "$BACKUP_PATH"; then
+  sudo chmod 644 "$BACKUP_PATH"
+  sudo chown $(whoami):admin "$BACKUP_PATH"
   echo "Created backup at $BACKUP_PATH"
 else
   echo "Failed to create backup"
@@ -122,17 +112,20 @@ if ! /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$PLIST_PATH"; then
   exit 1
 fi
 
-# Confirm changes
-if [[ $? -eq 0 ]]; then
-  echo "LSUIElement key successfully added to $PLIST_PATH."
-else
-  echo "Failed to add LSUIElement key to $PLIST_PATH."
-  exit 1
-fi
-
 # Re-sign the application after modification
 sudo codesign --force --sign - "$APP_PATH"
 
 # Set the appropriate permissions
 chmod 644 "$PLIST_PATH"
 chown $(whoami):admin "$PLIST_PATH"
+
+# Confirm changes
+if [[ $? -eq 0 ]]; then
+  echo
+  echo "LSUIElement key successfully added to $PLIST_PATH."
+  echo "XQuartz will no longer appear in the dock."
+else
+  echo
+  echo "Failed to add LSUIElement key to $PLIST_PATH."
+  exit 1
+fi
