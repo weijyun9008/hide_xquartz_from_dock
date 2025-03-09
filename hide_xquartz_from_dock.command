@@ -7,6 +7,12 @@ if [[ ! -x "$0" ]]; then
   chmod +x "$0"
 fi
 
+# Check if XQuartz is installed
+if [ ! -d "$APP_PATH" ]; then
+  echo "Error: XQuartz is not installed"
+  exit 1
+fi
+
 # Show initial guidance
 echo "Hide XQuartz From Dock"
 echo "=============================="
@@ -16,38 +22,20 @@ echo
 APP_PATH="/Applications/Utilities/XQuartz.app"
 PLIST_PATH="$APP_PATH/Contents/Info.plist"
 
-# Check if XQuartz is installed
-if [ ! -d "$APP_PATH" ]; then
-  echo "Error: XQuartz is not installed"
-  exit 1
-fi
-
-show_help() {
-  echo "This script helps you hide/show XQuartz from the dock."
-  echo
-  echo "Options:"
-  echo "1. Hide XQuartz from dock"
-  echo "2. Show XQuartz in dock again"
-  echo "3. Show help message"
-  echo "4. Exit"
-}
-
 select_mode() {
   while true; do
     echo "Please select an option:"
     echo "1) Hide XQuartz from dock"
     echo "2) Show XQuartz in dock again"
-    echo "3) Show help message"
-    echo "4) Exit"
+    echo "3) Exit"
     echo
-    read -p "Enter your choice (1-4): " choice
+    read -p "Enter your choice (1-3): " choice
     echo
     
     case "$choice" in
       1) MODE="patch"; break ;;
       2) MODE="restore"; break ;;
-      3) show_help; echo ;;
-      4) exit 0 ;;
+      3) exit 0 ;;
       *) echo "Invalid option. Please try again." ;;
     esac
     echo
